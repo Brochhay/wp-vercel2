@@ -7,19 +7,48 @@ import styles from '../styles/Home.module.css';
 
 const Home: NextPage = () => {
   const [posts, setPosts] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const router = useRouter();
-  const wordpressAPIUrl = 'https://freshnew.online/wp-json/wp/v2/posts'; // Remove pagination for all posts
+  const wordpressAPIUrl = 'https://freshnew.online/wp-json/wp/v2/posts';
 
   useEffect(() => {
-    fetch(wordpressAPIUrl)
-      .then((res) => res.json())
-      .then((data) => setPosts(data))
-      .catch((err) => console.error('Error fetching posts from WordPress:', err));
+    const fetchAllPosts = async () => {
+      let allPosts = [];
+      let page = 1;
+      let postsOnPage;
+
+      // Keep fetching until we get no posts
+      do {
+        const response = await fetch(`${wordpressAPIUrl}?page=${page}`);
+        postsOnPage = await response.json();
+        
+        if (postsOnPage.length > 0) {
+          allPosts = [...allPosts, ...postsOnPage];
+          page += 1; // Move to the next page
+        }
+      } while (postsOnPage.length > 0); // Stop when no more posts are returned
+
+      setPosts(allPosts); // Update state with all posts
+      setLoading(false); // Set loading to false when done
+    };
+
+    fetchAllPosts().catch((err) => {
+      console.error('Error fetching posts:', err);
+      setLoading(false); // Set loading to false if error occurs
+    });
   }, []);
 
   const handleHomeClick = () => {
     router.push('/'); // Navigate to the home page
   };
+
+  if (loading) {
+    return (
+      <div className={`${styles.container} bg-gray-900 text-white min-h-screen flex justify-center items-center`}>
+        <p className="text-xl text-yellow-400">Loading posts...</p>
+      </div>
+    );
+  }
 
   return (
     <div className={`${styles.container} bg-gray-900 text-white min-h-screen`}>

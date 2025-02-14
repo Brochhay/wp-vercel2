@@ -15,6 +15,15 @@ const Home: NextPage = () => {
       .catch((err) => console.error("Error fetching posts from WordPress:", err));
   }, []);
 
+  // Function to fetch the featured image URL for a post
+  const getFeaturedImage = (postId: number) => {
+    const imageUrl = `https://freshnew.online/wp-json/wp/v2/media?parent=${postId}`;
+    return fetch(imageUrl)
+      .then((res) => res.json())
+      .then((data) => data.length > 0 ? data[0].source_url : null)
+      .catch((err) => console.error("Error fetching featured image:", err));
+  };
+
   return (
     <div className={styles.container}>
       <Head>
@@ -28,6 +37,18 @@ const Home: NextPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {posts.map((post) => (
             <div key={post.id} className="border rounded-lg p-4 shadow-lg">
+              {/* Featured Image */}
+              {post.featured_media && (
+                <div className="mb-4">
+                  <Image
+                    src={post.featured_media_url || "/default-thumbnail.jpg"}
+                    alt={post.title.rendered}
+                    width={500}
+                    height={300}
+                    className="rounded-md"
+                  />
+                </div>
+              )}
               <h2 className="text-2xl font-semibold mb-2">{post.title.rendered}</h2>
               <p className="text-gray-600" dangerouslySetInnerHTML={{ __html: post.excerpt.rendered }}></p>
               <a href={`/post/${post.slug}`} className="text-blue-500 mt-2 block">Read More</a>
@@ -49,7 +70,7 @@ const Home: NextPage = () => {
         </a>
       </footer>
     </div>
-  )
-}
+  );
+};
 
 export default Home;

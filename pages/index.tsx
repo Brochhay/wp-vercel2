@@ -11,11 +11,32 @@ const Home: NextPage = () => {
   const router = useRouter();
   const wordpressAPIUrl = `https://freshnew.online/wp-json/wp/v2/posts?page=${page}`; // Add pagination to API URL
 
+  // Fetch posts and featured media URLs
   useEffect(() => {
-    fetch(wordpressAPIUrl)
-      .then((res) => res.json())
-      .then((data) => setPosts(data))
-      .catch((err) => console.error('Error fetching posts from WordPress:', err));
+    const fetchPosts = async () => {
+      try {
+        const postsResponse = await fetch(wordpressAPIUrl);
+        const postsData = await postsResponse.json();
+
+        // Fetch the featured image URLs for each post
+        const postsWithImages = await Promise.all(
+          postsData.map(async (post) => {
+            if (post.featured_media) {
+              const mediaResponse = await fetch(
+                `https://freshnew.online/wp-json/wp/v2/media/${post.featured_media}`
+              );
+              const mediaData = await mediaResponse.json();
+              post.featured_media_url = mediaData.source_url; // Add the URL to the post
+            }
+            return post;
+          })
+        );
+        setPosts(postsWithImages);
+      } catch (err) {
+        console.error('Error fetching posts from WordPress:', err);
+      }
+    };
+    fetchPosts();
   }, [page]);
 
   const handleNextPage = () => {
@@ -55,7 +76,7 @@ const Home: NextPage = () => {
           {posts.map((post) => (
             <div key={post.id} className="border border-gray-700 rounded-lg p-4 shadow-lg hover:bg-gray-800 transition duration-300">
               {/* Featured Image */}
-              {post.featured_media && (
+              {post.featured_media_url && (
                 <div className="mb-4">
                   <Image
                     src={post.featured_media_url || '/default-thumbnail.jpg'}

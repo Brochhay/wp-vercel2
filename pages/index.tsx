@@ -1,68 +1,24 @@
 import type { NextPage } from 'next';
 import Head from 'next/head';
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/router';
+import { GetServerSideProps } from 'next';
+import { useState } from 'react';
 import styles from '../styles/Home.module.css';
 
-const Home: NextPage = () => {
-  const [posts, setPosts] = useState<any[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const router = useRouter();
-  const wordpressAPIUrl = 'https://freshnew.online/wp-json/wp/v2/posts';
+interface Post {
+  id: number;
+  title: { rendered: string };
+  content: { rendered: string };
+  featured_media: number | null;
+  featured_media_url?: string;
+}
 
-  useEffect(() => {
-    const fetchAllPosts = async () => {
-      let allPosts = [];
-      let page = 1;
-      let postsOnPage;
+interface HomeProps {
+  posts: Post[];
+}
 
-      // Keep fetching until we get no posts
-      do {
-        const response = await fetch(`${wordpressAPIUrl}?page=${page}`);
-        postsOnPage = await response.json();
-
-        if (postsOnPage.length > 0) {
-          // Fetch featured image URL if present
-          const postsWithMedia = await Promise.all(
-            postsOnPage.map(async (post) => {
-              if (post.featured_media) {
-                const mediaResponse = await fetch(
-                  `https://freshnew.online/wp-json/wp/v2/media/${post.featured_media}`
-                );
-                const media = await mediaResponse.json();
-                post.featured_media_url = media.source_url;
-              }
-              return post;
-            })
-          );
-
-          allPosts = [...allPosts, ...postsWithMedia];
-          page += 1; // Move to the next page
-        }
-      } while (postsOnPage.length > 0); // Stop when no more posts are returned
-
-      setPosts(allPosts); // Update state with all posts
-      setLoading(false); // Set loading to false when done
-    };
-
-    fetchAllPosts().catch((err) => {
-      console.error('Error fetching posts:', err);
-      setLoading(false); // Set loading to false if error occurs
-    });
-  }, []);
-
-  const handleHomeClick = () => {
-    router.push('/'); // Navigate to the home page
-  };
-
-  if (loading) {
-    return (
-      <div className={`${styles.container} bg-gray-900 text-white min-h-screen flex justify-center items-center`}>
-        <p className="text-xl text-yellow-400">Loading posts...</p>
-      </div>
-    );
-  }
+const Home: NextPage<HomeProps> = ({ posts }) => {
+  const [loading, setLoading] = useState(false);
 
   return (
     <div className={`${styles.container} bg-gray-900 text-white min-h-screen`}>
@@ -74,12 +30,6 @@ const Home: NextPage = () => {
 
       <main className="container mx-auto p-6">
         <div className="flex justify-between items-center mb-6">
-          <button
-            onClick={handleHomeClick}
-            className="bg-yellow-400 text-black px-4 py-2 rounded-md hover:bg-yellow-300 transition duration-300"
-          >
-            Home
-          </button>
           <h1 className="text-4xl font-bold text-center text-yellow-400">All Posts</h1>
         </div>
 
@@ -123,6 +73,33 @@ const Home: NextPage = () => {
       </footer>
     </div>
   );
+};
+
+// Fetch posts server-side on each request
+export const getServerSideProps: GetServerSideProps = async () => {
+  const wordpressAPIUrl = 'https://freshnew.online/wp-json/wp/v2/posts';
+  const res = await fetch(wordpressAPIUrl);
+  const posts = await res.json();
+
+  // Fetch featured media for each post
+  const postsWithMedia = await Promise.all(
+    posts.map(async (post) => {
+      if (post.featured_media) {
+        const mediaResponse = await fetch(
+          `https://freshnew.online/wp-json/wp/v2/media/${post.featured_media}`
+        );
+        const media = await mediaResponse.json();
+        post.featured_media_url = media.source_url;
+      }
+      return post;
+    })
+  );
+
+  return {
+    props: {
+      posts: postsWithMedia,
+    },
+  };
 };
 
 export default Home;

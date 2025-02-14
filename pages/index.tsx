@@ -17,14 +17,13 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 		return {
 			redirect: {
 				permanent: false,
-				destination: `${
+				destination: ${
 					endpoint.replace(/(\/graphql\/)/, '/') + encodeURI(path as string)
-				}`,
+				},
 			},
 		};
 	}
-
-	const query = gql`
+	const query = gql
 		{
 			post(id: "/${path}/", idType: URI) {
 				id
@@ -45,10 +44,9 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 						altText
 					}
 				}
-				content
 			}
 		}
-	`;
+	;
 
 	const data = await graphQLClient.request(query);
 	if (!data.post) {
@@ -84,9 +82,9 @@ const Post: React.FC<PostProps> = (props) => {
 	return (
 		<>
 			<Head>
-				<link rel="canonical" href={`https://${host}/${path}`} />
+				<link rel="canonical" href={https://${host}/${path}} />
 				
-				<meta property="og:url" content={`https://${host}/${path}`} />
+				<meta property="og:url" content={https://${host}/${path}} />
 				<meta property="og:type" content="article" />
 				<meta property="og:locale" content="en_US" />
 				<meta property="og:site_name" content={host.split('.')[0]} />
@@ -97,20 +95,14 @@ const Post: React.FC<PostProps> = (props) => {
 					property="og:image:alt"
 					content={post.featuredImage.node.altText || post.title}
 				/>
-				<title>{post.title}</title>
+				<title>{}</title>
 			</Head>
 			<div className="post-container">
 				<h1>{post.title}</h1>
-
-				{/* Show featured image */}
-				{post.featuredImage && post.featuredImage.node.sourceUrl && (
-					<img
-						src={post.featuredImage.node.sourceUrl}
-						alt={post.featuredImage.node.altText || post.title}
-						className="featured-image"
-					/>
-				)}
-
+				<img
+					src={post.featuredImage.node.sourceUrl}
+					alt={post.featuredImage.node.altText}
+				/>
 				<article dangerouslySetInnerHTML={{ __html: post.content }} />
 			</div>
 		</>

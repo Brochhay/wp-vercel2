@@ -7,26 +7,15 @@ import styles from '../styles/Home.module.css';
 
 const Home: NextPage = () => {
   const [posts, setPosts] = useState<any[]>([]);
-  const [page, setPage] = useState(1);
-  const [hasMorePosts, setHasMorePosts] = useState(true); // Track if there are more posts to load
   const router = useRouter();
-  const wordpressAPIUrl = `https://freshnew.online/wp-json/wp/v2/posts?page=${page}`;
+  const wordpressAPIUrl = 'https://freshnew.online/wp-json/wp/v2/posts'; // Remove pagination for all posts
 
   useEffect(() => {
     fetch(wordpressAPIUrl)
       .then((res) => res.json())
-      .then((data) => {
-        setPosts((prevPosts) => [...prevPosts, ...data]);
-        if (data.length === 0) setHasMorePosts(false); // No more posts available
-      })
+      .then((data) => setPosts(data))
       .catch((err) => console.error('Error fetching posts from WordPress:', err));
-  }, [page]);
-
-  const handleNextPage = () => {
-    if (hasMorePosts) {
-      setPage((prevPage) => prevPage + 1);
-    }
-  };
+  }, []);
 
   const handleHomeClick = () => {
     router.push('/'); // Navigate to the home page
@@ -48,34 +37,29 @@ const Home: NextPage = () => {
           >
             Home
           </button>
-          <h1 className="text-4xl font-bold text-center text-yellow-400">Latest Posts</h1>
-          <button
-            onClick={handleNextPage}
-            disabled={!hasMorePosts}
-            className="bg-yellow-400 text-black px-4 py-2 rounded-md hover:bg-yellow-300 transition duration-300 disabled:opacity-50"
-          >
-            {hasMorePosts ? 'Next Page' : 'No More Posts'}
-          </button>
+          <h1 className="text-4xl font-bold text-center text-yellow-400">All Posts</h1>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="space-y-12">
           {posts.map((post) => (
-            <div key={post.id} className="border border-gray-700 rounded-lg p-4 shadow-lg hover:bg-gray-800 transition duration-300">
+            <div key={post.id} className="border border-gray-700 rounded-lg p-6 shadow-lg hover:bg-gray-800 transition duration-300">
               {/* Featured Image */}
               {post.featured_media_url && (
-                <div className="mb-4">
+                <div className="mb-6">
                   <Image
                     src={post.featured_media_url || '/default-thumbnail.jpg'}
                     alt={post.title.rendered || 'Post Image'}
-                    width={500}
-                    height={300}
+                    width={800}
+                    height={450}
                     className="rounded-md"
                   />
                 </div>
               )}
-              <h2 className="text-2xl font-semibold mb-2 text-yellow-300">{post.title.rendered}</h2>
-              <p className="text-gray-400" dangerouslySetInnerHTML={{ __html: post.excerpt.rendered }}></p>
-              <a href={`/post/${post.slug}`} className="text-blue-500 mt-2 block hover:text-blue-400 transition duration-200">Read More</a>
+              <h2 className="text-3xl font-semibold mb-4 text-yellow-300">{post.title.rendered}</h2>
+              <div
+                className="text-gray-400"
+                dangerouslySetInnerHTML={{ __html: post.content.rendered }} // Use full content
+              />
             </div>
           ))}
         </div>

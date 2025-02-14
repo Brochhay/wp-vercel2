@@ -8,18 +8,24 @@ import styles from '../styles/Home.module.css';
 const Home: NextPage = () => {
   const [posts, setPosts] = useState<any[]>([]);
   const [page, setPage] = useState(1);
+  const [hasMorePosts, setHasMorePosts] = useState(true); // Track if there are more posts to load
   const router = useRouter();
-  const wordpressAPIUrl = `https://freshnew.online/wp-json/wp/v2/posts?page=${page}`; // Add pagination to API URL
+  const wordpressAPIUrl = `https://freshnew.online/wp-json/wp/v2/posts?page=${page}`;
 
   useEffect(() => {
     fetch(wordpressAPIUrl)
       .then((res) => res.json())
-      .then((data) => setPosts(data))
+      .then((data) => {
+        setPosts((prevPosts) => [...prevPosts, ...data]);
+        if (data.length === 0) setHasMorePosts(false); // No more posts available
+      })
       .catch((err) => console.error('Error fetching posts from WordPress:', err));
   }, [page]);
 
   const handleNextPage = () => {
-    setPage((prevPage) => prevPage + 1);
+    if (hasMorePosts) {
+      setPage((prevPage) => prevPage + 1);
+    }
   };
 
   const handleHomeClick = () => {
@@ -45,9 +51,10 @@ const Home: NextPage = () => {
           <h1 className="text-4xl font-bold text-center text-yellow-400">Latest Posts</h1>
           <button
             onClick={handleNextPage}
-            className="bg-yellow-400 text-black px-4 py-2 rounded-md hover:bg-yellow-300 transition duration-300"
+            disabled={!hasMorePosts}
+            className="bg-yellow-400 text-black px-4 py-2 rounded-md hover:bg-yellow-300 transition duration-300 disabled:opacity-50"
           >
-            Next Page
+            {hasMorePosts ? 'Next Page' : 'No More Posts'}
           </button>
         </div>
 
@@ -55,11 +62,11 @@ const Home: NextPage = () => {
           {posts.map((post) => (
             <div key={post.id} className="border border-gray-700 rounded-lg p-4 shadow-lg hover:bg-gray-800 transition duration-300">
               {/* Featured Image */}
-              {post.featured_media && (
+              {post.featured_media_url && (
                 <div className="mb-4">
                   <Image
                     src={post.featured_media_url || '/default-thumbnail.jpg'}
-                    alt={post.title.rendered}
+                    alt={post.title.rendered || 'Post Image'}
                     width={500}
                     height={300}
                     className="rounded-md"

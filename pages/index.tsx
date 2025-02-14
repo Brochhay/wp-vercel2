@@ -21,9 +21,23 @@ const Home: NextPage = () => {
       do {
         const response = await fetch(`${wordpressAPIUrl}?page=${page}`);
         postsOnPage = await response.json();
-        
+
         if (postsOnPage.length > 0) {
-          allPosts = [...allPosts, ...postsOnPage];
+          // Fetch featured image URL if present
+          const postsWithMedia = await Promise.all(
+            postsOnPage.map(async (post) => {
+              if (post.featured_media) {
+                const mediaResponse = await fetch(
+                  `https://freshnew.online/wp-json/wp/v2/media/${post.featured_media}`
+                );
+                const media = await mediaResponse.json();
+                post.featured_media_url = media.source_url;
+              }
+              return post;
+            })
+          );
+
+          allPosts = [...allPosts, ...postsWithMedia];
           page += 1; // Move to the next page
         }
       } while (postsOnPage.length > 0); // Stop when no more posts are returned
